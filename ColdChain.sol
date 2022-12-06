@@ -7,7 +7,7 @@ library CyproSuite {
         internal
         pure
         returns (
-            uint256 v,
+            uint8 v,
             bytes32 r,
             bytes32 s
         )
@@ -19,16 +19,16 @@ library CyproSuite {
 
             s := mload(add(sig, 64))
 
-            r := byte(0, mload(add(sig, 96)))
+            v := byte(0, mload(add(sig, 96)))
         }
         return (v, r, s);
     }
 
     //extract the signer
     function recoverSigner(bytes32 message , bytes memory sig ) internal pure returns (address){
-        (uint8 v , bytes3 r , bytes32 s) = splitSignature(sig);
+        (uint8 v , bytes32 r , bytes32 s) = splitSignature(sig);
         //this is inbuilt
-        return ecrecover(message);
+        return ecrecover(message, v , r ,s);
     }
 }
 
@@ -120,7 +120,7 @@ contract ColdChain{
         require(prover.mode == Mode.PROVER);
 
         Status status  = unmarshalStatus(_status);
-        uint id = certificates.length;
+        uint id = certificateIds.length;
         Certificate memory certificate = Certificate(id, issuer , prover , signature, status);
         certificateIds.push(certificateIds.length);
         certificates[certificateIds.length -1] = certificate;
@@ -172,8 +172,5 @@ contract ColdChain{
     }
 
     
-
-   
-
 
 }
