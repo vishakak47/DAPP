@@ -19,7 +19,7 @@ library CyproSuite {
 
             s := mload(add(sig, 64))
 
-            r := byte(0, mload(add(sig, 96)))
+            v := byte(0, mload(add(sig, 96)))
         }
         return (v, r, s);
     }
