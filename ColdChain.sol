@@ -19,7 +19,7 @@ library CyproSuite {
 
             s := mload(add(sig, 64))
 
-            v := byte(0, mload(add(sig, 96)))
+            r := byte(0, mload(add(sig, 96)))
         }
         return (v, r, s);
     }
@@ -65,7 +65,7 @@ contract ColdChain{
 
     mapping(uint => VaccineBatch) public vaccineBatches;
     mapping(uint => Certificate) public certificates;
-    mapping(address => entity) public entities;
+    mapping(address => Entity)  public entities;
 
 
     event AddEntity(address entityId, string entityMode);
@@ -87,11 +87,11 @@ contract ColdChain{
          bytes32 encodedMode0 = keccak256(abi.encodePacked("ISSUER"));
          bytes32 encodedMode1 = keccak256(abi.encodePacked("PROVER"));
          bytes32 encodedMode2 = keccak256(abi.encodePacked("VERIFIER"));
-         if(encodeMode == encodedMode0){
+         if(encodedMode == encodedMode0){
              return Mode.ISSUER;
             
          }
-         else if(encodeMode == encodedMode1){
+         else if(encodedMode == encodedMode1){
              return Mode.PROVER;
          }
          else if(encodedMode == encodedMode2){
@@ -105,8 +105,8 @@ contract ColdChain{
         uint[] memory _certificateIds = new uint[](MAX_CERTIFICATIONS);
         uint id =VaccineBatchIds.length;
         VaccineBatch memory batch = VaccineBatch(id , brand , manufacturer ,_certificateIds);
-        vaccineBatch[id] = batch;
-        vaccineBatchIds.push(id);
+        vaccineBatches[id] = batch;
+        VaccineBatchIds.push(id);
 
         emit AddVaccineBatch(batch.id, batch.manufacturer);
         return id;
@@ -114,10 +114,10 @@ contract ColdChain{
 
     function issueCertificate(address _issuer, address _prover, string memory _status, uint vaccineBatch ,bytes memory signature) public returns(uint){
         Entity memory issuer = entities[_issuer];
-        require(issuer.mode = Role.ISSUER);
+        require(issuer.mode == Mode.ISSUER);
 
         Entity memory prover = entities[_prover];
-        require(issuer.mode = Role.PROVER);
+        require(prover.mode == Mode.PROVER);
 
         Status status  = unmarshalStatus(_status);
         uint id = certificates.length;
@@ -140,25 +140,36 @@ contract ColdChain{
          bytes32 encodedStatus2 = keccak256(abi.encodePacked("STORED"));
         bytes32 encodedStatus3 = keccak256(abi.encodePacked("DELIVERING_LOCAL"));
         bytes32 encodedStatus4 = keccak256(abi.encodePacked("DELIVERED"));
-         if(encodeMode == encodedMode0){
+         if(encodedStatus == encodedStatus0){
              return Status.MANUFACTURED;
          }
-         else if(encodeMode == encodedMode1){
+         else if(encodedStatus == encodedStatus1){
              return Status.DELIVERING_INTERNATIONAL;
          }
-         else if(encodedMode == encodedMode2){
+         else if(encodedStatus == encodedStatus2){
              return Status.STORED;
          }
-         else if(encodedMode == encodedMode3){
+         else if(encodedStatus == encodedStatus3){
              return Status.DELIVERING_LOCAL;
          }
-         else if(encodedMode == encodedMode4){
+         else if(encodedStatus == encodedStatus4){
              return Status.DELIVERD;
          }
          revert("received invalid Cerificate Status");
      }
 
-    //  function isMatchingSignature
+    function isMatchingSignature(bytes32 message , uint id , address issuer) public view returns (bool){
+
+        Certificate memory cert = certificates[id];
+        require(cert.issuer.id == issuer);
+
+        address recoveredSigner = CyproSuite.recoverSigner(message, cert.signature);
+
+        return recoveredSigner == cert.issuer.id;
+
+
+
+    }
 
     
 
